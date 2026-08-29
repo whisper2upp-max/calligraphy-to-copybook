@@ -36,6 +36,7 @@ input,select{font-family:inherit;font-size:14px;color:var(--ink)}
   border:1px solid #ddcfc0; border-radius:999px; background:#f8f1e7;
   color:#7b6e5e; font-size:11px; font-weight:700; letter-spacing:.2px;
 }
+.header-actions{display:flex; align-items:center; gap:8px; margin-left:auto}
 .btn{
   border:1px solid var(--line); background:#fff; color:var(--ink);
   padding:8px 14px; border-radius:8px; font-size:14px;
@@ -54,8 +55,19 @@ input,select{font-family:inherit;font-size:14px;color:var(--ink)}
 }
 .btn.import-action{padding:6px 13px; font-size:13px}
 .btn.print-action{padding:7px 18px; min-width:128px}
+.btn.header-doc-action{
+  padding:7px 12px; font-size:13px; font-weight:650;
+  border-color:#d8ccba; background:#fbf7ef;
+}
+.btn.header-doc-action:hover{border-color:var(--accent); color:var(--accent); background:#fff7f2}
+.btn.header-doc-action.changelog{border-color:#d9b9aa; color:var(--accent); background:#fff6f1}
 .btn.ghost-danger{border-color:transparent; background:transparent; color:#a05545}
 .btn.ghost-danger:hover{background:#f7e8e2}
+@media (max-width:680px){
+  #app header{gap:10px; padding:10px 14px}
+  #app header .brand{width:100%; flex-wrap:wrap}
+  .header-actions{width:100%; justify-content:flex-end}
+}
 
 /* ---------- 主体两栏 ---------- */
 #app main{
@@ -198,12 +210,33 @@ input,select{font-family:inherit;font-size:14px;color:var(--ink)}
 #sheetScaleVal{font-size:12px; color:var(--muted); min-width:36px}
 .chip .sc{position:absolute; right:2px; bottom:1px; font-size:9px; color:var(--accent); font-weight:700; pointer-events:none}
 
-/* ---------- 使用说明 ---------- */
-details.help{margin-top:0; font-size:13px}
-details.help summary{cursor:pointer; color:var(--muted); user-select:none}
-details.help .body{padding:10px 4px 2px; color:var(--muted); line-height:1.9}
-details.help b{color:var(--ink)}
-.docs-card details+details{border-top:1px solid var(--line); margin-top:10px; padding-top:10px}
+/* ---------- 右上角说明弹窗 ---------- */
+.doc-dialog{
+  width:min(720px,calc(100vw - 32px)); max-height:min(82vh,780px);
+  padding:0; border:1px solid #d9cdbc; border-radius:14px;
+  background:var(--panel); color:var(--ink);
+  box-shadow:0 22px 70px rgba(43,39,35,.28);
+}
+.doc-dialog[open]{display:grid; grid-template-rows:auto minmax(0,1fr) auto}
+.doc-dialog::backdrop{background:rgba(43,39,35,.38); backdrop-filter:blur(2px)}
+.doc-dialog-head{
+  display:flex; align-items:flex-start; gap:18px; padding:18px 20px 14px;
+  border-bottom:1px solid var(--line); background:#fffaf2;
+}
+.doc-dialog-head .title-wrap{min-width:0; margin-right:auto}
+.doc-dialog-head .kicker{display:block; color:var(--accent); font-size:11px; font-weight:800; letter-spacing:.8px}
+.doc-dialog-head h2{margin:2px 0 0; font-size:20px; letter-spacing:.5px}
+.doc-dialog-close{
+  width:32px; height:32px; border:1px solid var(--line); border-radius:50%;
+  background:#fff; color:var(--muted); font-size:22px; line-height:1;
+}
+.doc-dialog-close:hover{border-color:var(--accent); color:var(--accent); background:#fff7f2}
+.doc-dialog-body{overflow:auto; padding:18px 20px; font-size:13px; line-height:1.75; color:#665f55}
+.doc-dialog-body .intro{margin:0 0 14px; color:var(--ink); font-size:14px}
+.doc-steps{display:grid; gap:10px}
+.doc-step{padding:11px 13px; border:1px solid var(--line); border-radius:9px; background:#fff}
+.doc-step b{display:block; margin-bottom:3px; color:var(--ink)}
+.doc-dialog-footer{display:flex; justify-content:flex-end; padding:12px 20px; border-top:1px solid var(--line); background:#fffaf2}
 .log-version{margin-left:6px; color:var(--accent); font-weight:700}
 .change-list{margin:4px 0 0; padding-left:18px}
 .change-list li{margin:4px 0}
@@ -268,7 +301,7 @@ body.dragging-file #dropOverlay{display:flex}
 @page{size:A4 portrait; margin:0}
 @media print{
   body{background:#fff}
-  #app>header,#app>main>aside,#sheetCard,#dropOverlay,#toast,#statusBar{display:none!important}
+  #app>header,#app>main>aside,#sheetCard,.doc-dialog,#dropOverlay,#toast,#statusBar{display:none!important}
   #app main{display:block; padding:0}
   #previewSection{background:#fff; border:none; box-shadow:none; padding:0}
   #previewSection>.card-title{display:none}
@@ -289,6 +322,10 @@ body.dragging-file #dropOverlay{display:flex}
       <span class="sub">网图单字 → 田字格 A4 字帖</span>
       <span class="version-badge">v0.1.0</span>
     </div>
+    <nav class="header-actions" aria-label="帮助与版本信息">
+      <button class="btn header-doc-action" id="btnUsage" type="button">使用说明</button>
+      <button class="btn header-doc-action changelog" id="btnChangelog" type="button">更新日志</button>
+    </nav>
   </header>
 
   <main>
@@ -350,31 +387,6 @@ body.dragging-file #dropOverlay{display:flex}
         </div>
       </div>
 
-      <div class="card docs-card">
-        <details class="help">
-          <summary>使用说明（点开查看）</summary>
-          <div class="body">
-            <b>这是做什么的</b>：把书法单字图片整理成可直接打印的 A4 田字格、米字格或方格字帖。程序是单文件网页，可在 macOS、Windows、Linux 的现代桌面浏览器中离线运行，图片不会上传。<br>
-            <b>① 导入</b>：在「图库」右上角点「导入图片」，也可拖进窗口或按 Ctrl+V 粘贴，可一次多选。程序会识别完整笔画、去除照片光影和纸底，并等比缩放居中，不裁切字形。<br>
-            <b>② 图库</b>：按导入日期自动分组，可按日期筛选、只看「没用过」的字；点选（可多选）后批量加入/移出/删除，双击单个直接加入字帖。<br>
-            <b>③ 排版</b>：在左上「字帖设置」里调整每行个数、每列行数、每字重复次数和格子样式；「排列」可选<b>逐字连排</b>或<b>每字一行</b>（一页行数不够自动加页；临摹版每行第一格是深色例字）。字帖里的字可拖动调换顺序、点选多个批量移除；<b>点选后还能拖「大小」滑杆单独调整某个字，点「自适应」恢复默认</b>。右下实时预览。<br>
-            <b>④ 打印</b>：先在「字帖设置 → 预览」选择原图效果、临摹描红或空白格，再点 A4 预览右侧的「打印当前字帖」。打印内容始终与当前预览配置一致；系统打印对话框中选择 A4、缩放 100%。<br>
-            <b>提示</b>：所有图片只保存在本机浏览器里，不会上传。iPhone 拍的 HEIC 图片需先转成 PNG/JPG。
-          </div>
-        </details>
-        <details class="help">
-          <summary>更新日志 <span class="log-version">v0.1.0</span></summary>
-          <div class="body">
-            <b>0.1.0 · 首个公开版本</b>
-            <ul class="change-list">
-              <li>支持黑白、反色及白底/灰底彩色书法图片识别。</li>
-              <li>自动去除纸底、阴影、格线和边框，保留完整笔锋并统一字形大小。</li>
-              <li>支持图库管理、逐字缩放、田字格/米字格/方格、逐字连排和每字一行。</li>
-              <li>按当前预览配置打印原图、描红或空白 A4 字帖。</li>
-            </ul>
-          </div>
-        </details>
-      </div>
     </aside>
 
     <section>
@@ -408,6 +420,47 @@ body.dragging-file #dropOverlay{display:flex}
     </section>
   </main>
 </div>
+
+<dialog class="doc-dialog" id="usageDialog" aria-labelledby="usageDialogTitle">
+  <div class="doc-dialog-head">
+    <div class="title-wrap">
+      <span class="kicker">HELP</span>
+      <h2 id="usageDialogTitle">使用说明</h2>
+    </div>
+    <button class="doc-dialog-close" type="button" data-close-dialog aria-label="关闭使用说明">×</button>
+  </div>
+  <div class="doc-dialog-body">
+    <p class="intro">把书法单字图片整理成可直接打印的 A4 田字格、米字格或方格字帖。程序是单文件网页，可在 macOS、Windows、Linux 的现代桌面浏览器中离线运行，图片不会上传。</p>
+    <div class="doc-steps">
+      <div class="doc-step"><b>① 导入图片</b>在「图库」右上角点「导入图片」，也可拖进窗口或按 Ctrl+V 粘贴，可一次多选。程序会识别完整笔画、去除照片光影和纸底，并等比缩放居中，不裁切字形。</div>
+      <div class="doc-step"><b>② 整理图库</b>图片按导入日期自动分组，可按日期筛选、只看「没用过」的字；点选后可批量加入、移出或删除，双击单个图片可直接加入字帖。</div>
+      <div class="doc-step"><b>③ 设置排版</b>在左侧调整每行个数、每列行数、重复次数和格子样式。字帖里的字可拖动排序、批量移除，也可用「大小」滑杆单独调整，点「自适应」恢复默认。</div>
+      <div class="doc-step"><b>④ 打印字帖</b>先在「字帖设置 → 预览」选择原图效果、临摹描红或空白格，再点 A4 预览右侧的「打印当前字帖」。系统打印对话框中选择 A4、纵向、缩放 100%。</div>
+      <div class="doc-step"><b>本地数据提示</b>图片只保存在当前浏览器。清除网站数据会删除图库；iPhone 拍摄的 HEIC 图片请先转换成 PNG 或 JPG。</div>
+    </div>
+  </div>
+  <div class="doc-dialog-footer"><button class="btn primary" type="button" data-close-dialog>知道了</button></div>
+</dialog>
+
+<dialog class="doc-dialog" id="changelogDialog" aria-labelledby="changelogDialogTitle">
+  <div class="doc-dialog-head">
+    <div class="title-wrap">
+      <span class="kicker">RELEASE NOTES</span>
+      <h2 id="changelogDialogTitle">更新日志 <span class="log-version">v0.1.0</span></h2>
+    </div>
+    <button class="doc-dialog-close" type="button" data-close-dialog aria-label="关闭更新日志">×</button>
+  </div>
+  <div class="doc-dialog-body">
+    <p class="intro"><b>0.1.0 · 首个公开版本</b></p>
+    <ul class="change-list">
+      <li>支持黑白、反色及白底/灰底彩色书法图片识别。</li>
+      <li>自动去除纸底、阴影、格线和边框，保留完整笔锋并统一字形大小。</li>
+      <li>支持图库管理、逐字缩放、田字格/米字格/方格、逐字连排和每字一行。</li>
+      <li>按当前预览配置打印原图、描红或空白 A4 字帖。</li>
+    </ul>
+  </div>
+  <div class="doc-dialog-footer"><button class="btn primary" type="button" data-close-dialog>关闭</button></div>
+</dialog>
 
 <div id="dropOverlay">松开鼠标，导入图片 🖼️</div>
 <div id="toast"></div>
@@ -2063,6 +2116,20 @@ function bindSettings() {
 
 /* ================= 事件绑定 ================= */
 function bindEvents() {
+  const showDialog = dialog => {
+    if (typeof dialog.showModal === 'function') dialog.showModal();
+    else dialog.setAttribute('open', '');
+  };
+  const closeDialog = dialog => {
+    if (typeof dialog.close === 'function') dialog.close();
+    else dialog.removeAttribute('open');
+  };
+  $('#btnUsage').onclick = () => showDialog($('#usageDialog'));
+  $('#btnChangelog').onclick = () => showDialog($('#changelogDialog'));
+  $$('[data-close-dialog]').forEach(button => {
+    button.onclick = () => closeDialog(button.closest('dialog'));
+  });
+
   $('#btnImport').onclick = () => $('#fileInput').click();
   $('#fileInput').addEventListener('change', e => { importFiles(e.target.files); e.target.value = ''; });
   /* 图库批量操作 */
