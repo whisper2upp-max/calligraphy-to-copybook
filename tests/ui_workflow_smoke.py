@@ -1,4 +1,4 @@
-"""Verify the 0.1.0 import placement and current-configuration print workflow."""
+"""Verify the 0.1.0 header docs, import placement, and print workflow."""
 
 from __future__ import annotations
 
@@ -35,6 +35,8 @@ def main() -> None:
             """
             () => ({
               headerButtons: document.querySelectorAll('#app > header button').length,
+              usageInHeader: !!document.querySelector('#app > header .header-actions #btnUsage'),
+              changelogInHeader: !!document.querySelector('#app > header .header-actions #btnChangelog'),
               importInLibrary: !!document.querySelector('.lib-card .card-title #btnImport'),
               printInPreview: !!document.querySelector('#previewSection > .card-title #btnPrint'),
               printButtons: [...document.querySelectorAll('button')]
@@ -42,24 +44,38 @@ def main() -> None:
               sampleButton: !!document.querySelector('#btnSample'),
               sampleFunction: typeof window.makeSampleFiles,
               version: document.querySelector('.version-badge')?.textContent.trim(),
-              hasUsage: [...document.querySelectorAll('details summary')]
-                .some(summary => summary.textContent.includes('使用说明')),
-              hasChangelog: [...document.querySelectorAll('details summary')]
-                .some(summary => summary.textContent.includes('更新日志')),
+              oldDocsCard: !!document.querySelector('.docs-card'),
+              usageDialog: !!document.querySelector('#usageDialog'),
+              changelogDialog: !!document.querySelector('#changelogDialog'),
             })
             """
         )
         assert placement == {
-            "headerButtons": 0,
+            "headerButtons": 2,
+            "usageInHeader": True,
+            "changelogInHeader": True,
             "importInLibrary": True,
             "printInPreview": True,
             "printButtons": 1,
             "sampleButton": False,
             "sampleFunction": "undefined",
             "version": "v0.1.0",
-            "hasUsage": True,
-            "hasChangelog": True,
+            "oldDocsCard": False,
+            "usageDialog": True,
+            "changelogDialog": True,
         }, placement
+
+        page.get_by_role("button", name="使用说明").click()
+        assert page.locator("#usageDialog").evaluate("dialog => dialog.open")
+        assert page.get_by_role("heading", name="使用说明").is_visible()
+        page.locator("#usageDialog [data-close-dialog]").last.click()
+        assert not page.locator("#usageDialog").evaluate("dialog => dialog.open")
+
+        page.get_by_role("button", name="更新日志").click()
+        assert page.locator("#changelogDialog").evaluate("dialog => dialog.open")
+        assert page.get_by_role("heading", name="更新日志 v0.1.0").is_visible()
+        page.locator("#changelogDialog [data-close-dialog]").last.click()
+        assert not page.locator("#changelogDialog").evaluate("dialog => dialog.open")
 
         page.locator("#fileInput").set_input_files(args.source_image)
         page.wait_for_function("document.querySelectorAll('#sheetChips .chip').length === 1")
