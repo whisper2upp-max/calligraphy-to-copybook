@@ -1,0 +1,13 @@
+.DS_Store
+*.pyc
+__pycache__/
+tests/artifacts/
+
+# Local source images and internal handoff notes are not part of the public app.
+字/
+工作交接/
+progress.md
+启动字帖.command
+
+# Local main-based release backups; never commit generated archives recursively.
+.local-releases/
