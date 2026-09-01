@@ -322,7 +322,7 @@ def main() -> None:
               const canvas = document.createElement('canvas');
               canvas.width = canvas.height = 512;
               record.dark = canvas.toDataURL('image/png');
-              record.v5 = 16;
+              record.v5 = 17;
               await Store.put(record);
               return {id: record.id, key};
             }
@@ -409,7 +409,7 @@ def main() -> None:
     assert not page_errors
     assert not console_errors
     assert all(metric["version"] == 4 for metric in metrics)
-    assert all(metric["processing_version"] == 17 for metric in metrics)
+    assert all(metric["processing_version"] == 18 for metric in metrics)
     assert all(metric["width"] > 0 and metric["height"] > 0 for metric in metrics)
     assert all(metric["border"] == 0 for metric in metrics)
     assert recovery_routes["exact"] == "丑"
