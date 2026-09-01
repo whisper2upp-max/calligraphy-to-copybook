@@ -1,4 +1,4 @@
-"""Verify the 0.1.0 header docs, import placement, and print workflow."""
+"""Verify the 0.1.0 header docs, import placement, print, and PDF entry points."""
 
 from __future__ import annotations
 
@@ -39,8 +39,11 @@ def main() -> None:
               changelogInHeader: !!document.querySelector('#app > header .header-actions #btnChangelog'),
               importInLibrary: !!document.querySelector('.lib-card .card-title #btnImport'),
               printInPreview: !!document.querySelector('#previewSection > .card-title #btnPrint'),
+              pdfInPreview: !!document.querySelector('#previewSection > .card-title #btnPdf'),
               printButtons: [...document.querySelectorAll('button')]
                 .filter(button => button.textContent.includes('打印')).length,
+              pdfButtons: [...document.querySelectorAll('button')]
+                .filter(button => button.textContent.includes('PDF')).length,
               sampleButton: !!document.querySelector('#btnSample'),
               sampleFunction: typeof window.makeSampleFiles,
               version: document.querySelector('.version-badge')?.textContent.trim(),
@@ -56,7 +59,9 @@ def main() -> None:
             "changelogInHeader": True,
             "importInLibrary": True,
             "printInPreview": True,
+            "pdfInPreview": True,
             "printButtons": 1,
+            "pdfButtons": 1,
             "sampleButton": False,
             "sampleFunction": "undefined",
             "version": "v0.1.0",
@@ -83,7 +88,11 @@ def main() -> None:
             """
             () => {
               window.__printModes = [];
-              window.print = () => window.__printModes.push(settings.mode);
+              window.__printPageCounts = [];
+              window.print = () => {
+                window.__printModes.push(settings.mode);
+                window.__printPageCounts.push(document.querySelectorAll('#pages .page').length);
+              };
             }
             """
         )
@@ -118,6 +127,37 @@ def main() -> None:
             assert result["lastPrintMode"] == mode, result
 
         assert [print_results[mode]["printCount"] for mode in labels] == [1, 2, 3]
+        all_pages_print = page.evaluate(
+            """
+            () => {
+              const id = sheet[0];
+              sheet = Array(61).fill(id);
+              settings.cols = 1;
+              settings.rows = 1;
+              settings.repeat = 1;
+              settings.mode = 'origin';
+              renderSheet();
+              renderPages();
+              return document.querySelectorAll('#pages .page').length;
+            }
+            """
+        )
+        assert all_pages_print == 60, all_pages_print
+        page.get_by_role("button", name="打印当前字帖").click()
+        page.wait_for_timeout(120)
+        printed_pages = page.evaluate("window.__printPageCounts.at(-1)")
+        assert printed_pages == 61, printed_pages
+        page.evaluate(
+            """
+            () => {
+              sheet = [sheet[0]];
+              settings.cols = 5;
+              settings.rows = 6;
+              renderSheet();
+              renderPages();
+            }
+            """
+        )
         page.locator("#setMode").select_option("origin")
         page.screenshot(path=args.screenshot, full_page=True)
         context.close()
@@ -130,6 +170,7 @@ def main() -> None:
             {
                 "placement": placement,
                 "print_results": print_results,
+                "all_pages_print": {"preview": all_pages_print, "printed": printed_pages},
                 "page_errors": page_errors,
                 "console_errors": console_errors,
             },
